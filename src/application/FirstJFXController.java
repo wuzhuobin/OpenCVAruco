@@ -124,19 +124,22 @@ public class FirstJFXController {
 
 				@Override
 				public void run() {
+
 					// effectively grab and process a single frame
-					Mat frame = new Mat();
-					videoCapture.read(frame);
+					Mat raw = new Mat();
+					videoCapture.read(raw);
 					Platform.runLater(new Runnable() {
 						
 						@Override
 						public void run() {
 							// TODO Auto-generated method stub
-							imageViewBefore.setImage(mat2Image(frame));
+							imageViewBefore.setImage(mat2Image(raw));
 						}
 					});
 					// convert and show the frame
-
+					// effectively grab and process a single frame
+					Mat frame = new Mat();
+					videoCapture.read(frame);
 					Mat ids = new Mat(); 
 					Vector<Mat> corners = new Vector<Mat>();
 //					Vector<Mat> rejected = new Vector<>();
@@ -156,29 +159,29 @@ public class FirstJFXController {
 						if(!camMatrix.empty() && !distCoeffs.empty()) {
 							Mat rvecs = new Mat();
 							Mat tvecs = new Mat();
-
+							
 							if(corners.size() > 0) {								
 								Aruco.estimatePoseSingleMarkers(corners, 0.066f, camMatrix, distCoeffs, rvecs, tvecs);
+								Aruco.drawAxis(frame, camMatrix, distCoeffs, rvecs.row(0), tvecs.row(0), 0.033f);
+								double[] translations = new double[3];
+								translations[0] = tvecs.get(0, 0)[0];
+								translations[1] = tvecs.get(0, 0)[1];
+								translations[2] = tvecs.get(0, 0)[2];
+								double[] rotations = new double[3];
+								rotations[0] = rvecs.get(0, 0)[0];
+								rotations[1] = rvecs.get(0, 0)[1];
+								rotations[2] = rvecs.get(0, 0)[2];
+								
+								Platform.runLater(()->{
+									textFieldTranslation0.setText(String.valueOf(translations[0]));
+									textFieldTranslation1.setText(String.valueOf(translations[1]));
+									textFieldTranslation2.setText(String.valueOf(translations[2]));
+									textFieldRotation0.setText(String.valueOf(rotations[0]));
+									textFieldRotation1.setText(String.valueOf(rotations[1]));
+									textFieldRotation2.setText(String.valueOf(rotations[2]));
+								});
+
 							}
-
-							double[] translations = new double[3];
-							translations[0] = tvecs.get(0, 0)[0];
-							translations[1] = tvecs.get(0, 0)[1];
-							translations[2] = tvecs.get(0, 0)[2];
-							double[] rotations = new double[3];
-							rotations[0] = rvecs.get(0, 0)[0];
-							rotations[1] = rvecs.get(0, 0)[1];
-							rotations[2] = rvecs.get(0, 0)[2];
-							
-							Platform.runLater(()->{
-								textFieldTranslation0.setText(String.valueOf(translations[0]));
-								textFieldTranslation1.setText(String.valueOf(translations[1]));
-								textFieldTranslation2.setText(String.valueOf(translations[2]));
-								textFieldRotation0.setText(String.valueOf(rotations[0]));
-								textFieldRotation1.setText(String.valueOf(rotations[1]));
-								textFieldRotation2.setText(String.valueOf(rotations[2]));
-							});
-
 							
 						}
 						

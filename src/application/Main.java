@@ -20,7 +20,7 @@ public class Main extends Application {
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("FirstJFX.fxml"));
 			// create and style a scene
 			Scene scene = new Scene(loader.load());
-			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+			//scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			// scene
 			primaryStage.setScene(scene);
 			// show the GUI
