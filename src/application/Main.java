@@ -6,7 +6,6 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
 import javafx.fxml.FXMLLoader;
 import javafx.event.EventHandler;
 
@@ -17,24 +16,15 @@ public class Main extends Application {
 		try
 		{
 			// load the FXML resource
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("FirstJFX.fxml"));
+			FXMLLoader loader = new FXMLLoader(getClass().getResource("MainWindow.fxml"));
+			loader.load();
 			// create and style a scene
-			Scene scene = new Scene(loader.load());
 			//scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			// scene
-			primaryStage.setScene(scene);
+			primaryStage.setTitle("MainWindow");
+			primaryStage.setScene(((MainWindowController)loader.getController()).getScene());
 			// show the GUI
 			primaryStage.show();
-			
-			// set the proper behavior on closing the application
-			FirstJFXController controller = loader.getController();
-//			controller
-			primaryStage.setOnCloseRequest((new EventHandler<WindowEvent>() {
-				public void handle(WindowEvent we)
-				{
-					controller.streaming(false);
-				}
-			}));
 			
 		}
 		catch (Exception e)

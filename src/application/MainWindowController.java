@@ -1,15 +1,18 @@
 package application;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
+import javafx.fxml.FXML;
+import javafx.scene.Scene;
+import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,193 +28,60 @@ import javax.xml.transform.stream.StreamResult;
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.CharucoBoard;
 import org.opencv.aruco.Dictionary;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.videoio.VideoCapture;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 
-import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
-import javafx.embed.swing.SwingFXUtils;
-import javafx.fxml.FXML;
-import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
-public class FirstJFXController {
+public class MainWindowController {
+
+	private class ExitHandler implements EventHandler<WindowEvent>{
+
+		@Override
+		public void handle(WindowEvent event) {
+			// TODO Auto-generated method stub
+			MainWindowController.this.rawCam.streaming(false);
+			StreamingView.videoCapture.release();
+			System.exit(0);
+		}
+		
+	}
+	
 	
 	@FXML
-	public void initialize() {
-		Size outSize = new Size(800, 800);
-		Mat img = new Mat();
-		FirstJFXController.charucoBoard.draw(outSize, img);
-		this.markerView.setImage(mat2Image(img));
-		StreamingView view = new StreamingView();
-		view.setFitHeight(400);
-		view.setFitWidth(400);
-		this.vBoxView.getChildren().add(0, view);
+	public void initialize(){
+		this.scene = new ReadOnlyObjectWrapper<Scene>(new Scene(this.vBoxMain));
+		this.getScene().windowProperty().addListener(new ChangeListener<Window>() {
+
+			@Override
+			public void changed(ObservableValue<? extends Window> observable, Window oldValue, Window newValue) {
+				// TODO Auto-generated method stub
+				newValue.setOnCloseRequest(new ExitHandler());
+				
+			}});
+		
+		
+		this.rawCam = new StreamingView();
+		this.rawCam.setFitHeight(400);
+		this.rawCam.setFitWidth(400);
+		this.vBoxView.getChildren().add(0, this.rawCam);
+		this.afterCam = new StreamingView();
+		this.afterCam.setFitHeight(400);
+		this.afterCam.setFitWidth(400);
+		this.vBoxView.getChildren().add(2, afterCam);
+		Mat marker = new Mat();
+		MainWindowController.charucoBoard.draw(new Size(800, 800), marker);
+		this.markerView.setImage(StreamingView.mat2Image(marker));
+		
 	}
-
-	public void streaming(Boolean b) {
-//		if (b) {
-//			videoCapture.open(0);
-//			// grab a frame every 33 ms (30 frames/sec)
-//			Runnable frameGrabber = new Runnable() {
-//
-//				@Override
-//				public void run() {
-//
-//					// effectively grab and process a single frame
-//					Mat raw = new Mat();
-//					videoCapture.read(raw);
-//					Platform.runLater(new Runnable() {
-//						
-//						@Override
-//						public void run() {
-//							// TODO Auto-generated method stub
-//							imageViewBefore.setImage(mat2Image(raw));
-//						}
-//					});
-//					// convert and show the frame
-//					// effectively grab and process a single frame
-//					Mat frame = new Mat();
-//					videoCapture.read(frame);
-//					Mat ids = new Mat(); 
-//					Vector<Mat> corners = new Vector<Mat>();
-////					Vector<Mat> rejected = new Vector<>();
-//					Mat currentCharucoIds = new Mat();
-//					Mat currentCharucoCorners = new Mat();
-//					Aruco.detectMarkers(frame, FirstJFXController.dictionary, corners, ids);
-////					Aruco.refineDetectedMarkers(frame, charucoBoard, corners, ids, new Vector<>());
-//
-//					Aruco.drawDetectedMarkers(frame, corners, ids, new Scalar(0, 255, 0));
-//					if (!ids.empty()) {
-//						Aruco.interpolateCornersCharuco(corners, ids, frame, FirstJFXController.charucoBoard,
-//								currentCharucoCorners, currentCharucoIds);
-//						Aruco.drawDetectedCornersCharuco(frame, currentCharucoCorners, currentCharucoIds,
-//								new Scalar(255));
-//
-//						
-//						if(!camMatrix.empty() && !distCoeffs.empty()) {
-//							Mat rvecs = new Mat();
-//							Mat tvecs = new Mat();
-//							
-//							if(corners.size() > 0) {								
-//								Aruco.estimatePoseSingleMarkers(corners, 0.066f, camMatrix, distCoeffs, rvecs, tvecs);
-//								Aruco.drawAxis(frame, camMatrix, distCoeffs, rvecs.row(0), tvecs.row(0), 0.033f);
-//								double[] translations = new double[3];
-//								translations[0] = tvecs.get(0, 0)[0];
-//								translations[1] = tvecs.get(0, 0)[1];
-//								translations[2] = tvecs.get(0, 0)[2];
-//								double[] rotations = new double[3];
-//								rotations[0] = rvecs.get(0, 0)[0];
-//								rotations[1] = rvecs.get(0, 0)[1];
-//								rotations[2] = rvecs.get(0, 0)[2];
-//								
-//								Platform.runLater(()->{
-//									textFieldTranslation0.setText(String.valueOf(translations[0]));
-//									textFieldTranslation1.setText(String.valueOf(translations[1]));
-//									textFieldTranslation2.setText(String.valueOf(translations[2]));
-//									textFieldRotation0.setText(String.valueOf(rotations[0]));
-//									textFieldRotation1.setText(String.valueOf(rotations[1]));
-//									textFieldRotation2.setText(String.valueOf(rotations[2]));
-//								});
-//
-//							}
-//							
-//						}
-//						
-//
-//					}
-//			
-//					
-//					Platform.runLater(new Runnable() {
-//						
-//						@Override
-//						public void run() {
-//							// TODO Auto-generated method stub
-//							imageViewAfter.setImage(mat2Image(frame));
-//							
-//						}
-//					});
-//				}
-//			};
-//
-//			this.timer = Executors.newSingleThreadScheduledExecutor();
-//			this.timer.scheduleAtFixedRate(frameGrabber, 0, 33, TimeUnit.MILLISECONDS);
-//		} else {
-//
-//			try {
-//				// stop the timer
-//				this.timer.shutdown();
-//				this.timer.awaitTermination(33, TimeUnit.MILLISECONDS);
-//				this.videoCapture.release();
-//			} catch (InterruptedException e) {
-//				// log any exception
-//				System.err.println("Exception in stopping the frame capture, trying to release the camera now... " + e);
-//			}
-//		}
-
-	}
-
-	// a timer for acquiring the video stream
-	private ScheduledExecutorService timer;
-
-	// util
-	/**
-	 * Convert a Mat object (OpenCV) in the corresponding Image for JavaFX
-	 *
-	 * @param frame
-	 *            the {@link Mat} representing the current frame
-	 * @return the {@link Image} to show
-	 */
-	public static Image mat2Image(Mat frame) {
-		try {
-			return SwingFXUtils.toFXImage(matToBufferedImage(frame), null);
-		} catch (Exception e) {
-			System.err.println("Cannot convert the Mat obejct: " + e);
-			return null;
-		}
-	}
-
-	/**
-	 * Support for the {@link mat2image()} method
-	 * 
-	 * @param original
-	 *            the {@link Mat} object in BGR or grayscale
-	 * @return the corresponding {@link BufferedImage}
-	 */
-	private static BufferedImage matToBufferedImage(Mat original) {
-		// init
-		BufferedImage image = null;
-		int width = original.width(), height = original.height(), channels = original.channels();
-		byte[] sourcePixels = new byte[width * height * channels];
-		original.get(0, 0, sourcePixels);
-
-		if (original.channels() > 1) {
-			image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-		} else {
-			image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-		}
-		final byte[] targetPixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-		System.arraycopy(sourcePixels, 0, targetPixels, 0, sourcePixels.length);
-
-		return image;
-	}
-
+	
 	@FXML
 	public void handleDrawMarker() {
 		Mat img = new Mat();
@@ -228,12 +98,11 @@ public class FirstJFXController {
 	@FXML
 	public void handleChArUcoBoardCapture() {
 		this.allImgs.add(new Mat());
-		this.videoCapture.read(this.allImgs.lastElement());
+		StreamingView.videoCapture.read(this.allImgs.lastElement());
 		this.textFieldNumOfImages.setText(String.valueOf(this.allImgs.size()));
 	}
 	
 	@FXML
-	
 	public void handleChArUcoBoardCaptureClear() {
 		this.allImgs.clear();
 		this.textFieldNumOfImages.setText("0");
@@ -308,7 +177,7 @@ public class FirstJFXController {
 			return;
 		}
 		Mat img = new Mat();
-		this.videoCapture.read(img);
+		StreamingView.videoCapture.read(img);
 		Imgcodecs.imwrite(file.getAbsolutePath(), img);
 
 	}
@@ -393,6 +262,14 @@ public class FirstJFXController {
 			
 	}
 
+	public final Scene getScene() {
+		return scene.getReadOnlyProperty().getValue();
+	}
+	
+	public final ReadOnlyObjectProperty<Scene> getReadOnlyScene(){
+		return this.scene.getReadOnlyProperty();
+	}
+
 	static final private Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_6X6_1000);
 	static final private CharucoBoard charucoBoard = CharucoBoard.create(4, 4, 2f, 1f, dictionary);	
 	@FXML
@@ -421,7 +298,9 @@ public class FirstJFXController {
 	private TextField textFieldAruco;
 	@FXML
 	private TextField textFieldCharuco;
-	private VideoCapture videoCapture = new VideoCapture();
+	private ReadOnlyObjectWrapper<Scene> scene;
+	private StreamingView rawCam;
+	private StreamingView afterCam;
 	private Vector<Mat> allImgs = new Vector<Mat>();
 	private Mat camMatrix = new Mat();
 	private Mat distCoeffs = new Mat();
